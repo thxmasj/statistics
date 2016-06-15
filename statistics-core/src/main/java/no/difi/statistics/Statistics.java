@@ -7,22 +7,24 @@ import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 public class Statistics {
 
-    private Client client;
+    private Client elasticSearchClient;
 
     @Autowired
-    public Statistics(Client client) {
-        this.client = client;
+    public Statistics(Client elasticSearchClient) {
+        this.elasticSearchClient = elasticSearchClient;
     }
 
     public List<TimeSeriesPoint> minutes(String seriesName, Date from, Date to) {
-        SearchResponse response = client.prepareSearch(seriesName)
+        SearchResponse response = elasticSearchClient.prepareSearch(seriesName)
                 .setTypes("minutes")
+                .addField("time").addField("value")
                 .setQuery(QueryBuilders.rangeQuery("time").from(from).to(to))
                 .execute().actionGet();
         List<TimeSeriesPoint> series = new ArrayList<>();
@@ -33,7 +35,15 @@ public class Statistics {
     }
 
     private TimeSeriesPoint point(SearchHit hit) {
-        return new TimeSeriesPoint(hit.field("time").value(), hit.field("value").value());
+        return new TimeSeriesPoint(time(hit), value(hit));
+    }
+
+    private ZonedDateTime time(SearchHit hit) {
+        return ZonedDateTime.parse(hit.field("time").value(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+    }
+
+    private int value(SearchHit hit) {
+        return hit.field("value").value();
     }
 
 }

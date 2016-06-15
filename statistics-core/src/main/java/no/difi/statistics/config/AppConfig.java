@@ -4,21 +4,25 @@ import no.difi.statistics.Statistics;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.transport.TransportAddress;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
 
 @Configuration
 public class AppConfig {
 
+    @Autowired
+    private Environment environment;
+
     @Bean(destroyMethod = "close")
     public Client elasticSearchClient() throws UnknownHostException {
+        int port = environment.getRequiredProperty("elasticsearch.port", Integer.class);
         return TransportClient.builder().build()
-                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("localhost"), 9300));
+                .addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName("192.168.99.100"), port));
     }
 
     @Bean
